@@ -1,0 +1,21 @@
+MuJoCo Pro Lab license activation key, number 6813, type 6.
+
+Issued to Prof. Jeffrey Trinkle, Lehigh University.
+
+Expires October 14, 2020.
+
+Do not share this file with anyone other than the users covered
+by your license agreement with Roboti LLC. This file activates
+MuJoCo Pro on any computer running any supported OS.
+
+Do not modify this file. Its entire content, including the
+plain text section, is used by the activation manager.
+
+51a988fa1e6e1942360d6ed7a46c68d4a51268f1d3598adde15e482cff1d0c28
+fa3bc946bf4607403b083781311259bf18bc8b71edd05c12df4f338b512fa8a9
+0a3ce387b4c5de21483387e15a4865bc01b9ea8becd799febf47dcbfc0ed44b0
+3ea610749d9f41650c560bea21f359ab2fe75b58d5d5b754274aeffb249afc18
+b784d4c7ed8ae333718260400796d7c2b0e96dec622feeb297771931ce993124
+26cb5aee93c50358df9a5d6f05c3c02eb0a7493d3da123aa0f675dcefa19b44d
+81caa0290be2d5ca0876398eb0f9bf805859f37445d901aa14b532eecb8ee216
+8ae785e17d74825b87b31f31d78be2cbcfcd8cf0981e762b625d470898784422
