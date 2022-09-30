@@ -16,6 +16,7 @@ class VelocityController:
     def fwdkin_alljoints_gen3(self, q):
         P = self.P
         H = self.H
+
         # initialize utility variables
         R=np.eye(3)
         p=np.zeros((3,1))
@@ -24,7 +25,7 @@ class VelocityController:
         # forward kinematics
         for i in range(self.n):
             h_i = H[0:3,i]
-           
+            
             if self.types[0][i] == 0: #rev
                 pi = P[0:3,i].reshape(3, 1)
                 p = p+np.dot(R,pi)
@@ -34,8 +35,8 @@ class VelocityController:
                 pi = (P[:,i]+q[i]*h_i).reshape(3, 1)
                 p = p+np.dot(R,pi)
             else: # default pris
-	            pi = (P[:,i]+q[i]*h_i).reshape(3, 1)
-	            p = p+np.dot(R,pi)
+                pi = (P[:,i]+q[i]*h_i).reshape(3, 1)
+                p = p+np.dot(R,pi)
             
             pp[:,[i]] = p
             RR[:,:,i] = R
@@ -47,14 +48,12 @@ class VelocityController:
         
         return pp, RR
         
-    
     def getJacobian_world_gen3(self, q):
         num_joints = self.n 
         H = self.H
         # Compute Forward Kinematics
         P_0_i = np.zeros((3,num_joints+1))
         R_0_i = np.zeros((3,3,num_joints+1))
-
 
         P_0_i,R_0_i=self.fwdkin_alljoints_gen3(q)
         
@@ -70,7 +69,6 @@ class VelocityController:
                 J[:,i] = np.hstack((np.dot(R_0_i[:,:,i],H[:,i]), np.dot(self.hat(np.dot(R_0_i[:,:,i], H[:,i])), P_0_T - P_0_i[:,i])))
         
         return J
-    
     
     def getJacobian_task_gen3(self, q):
         num_joints = self.n 
@@ -79,7 +77,6 @@ class VelocityController:
         P_0_i = np.zeros((3,num_joints+1))
         R_0_i = np.zeros((3,3,num_joints+1))
 
-
         P_0_i,R_0_i=self.fwdkin_alljoints_gen3(q)
         
         P_0_T = P_0_i[:,num_joints]
@@ -92,12 +89,10 @@ class VelocityController:
         for i in range(num_joints):
             if self.types[0][i] == 0:
                 J[:,i] = np.hstack((np.dot(R_0_i[:,:,i],H[:,i]), np.dot(self.hat(np.dot(R_0_i[:,:,i], H[:,i])), P_0_T - P_0_i[:,i])))
-                
         
         J = np.dot(np.vstack((np.hstack((R_0_i[:,:,num_joints].T, np.zeros((3,3)))), np.hstack((np.zeros((3,3)), R_0_i[:,:,num_joints].T)))), J)
         
         return J
-    
     
     def get_joint_vel_worldframe(self, twist_ee, q, vinit): 
         
@@ -109,7 +104,6 @@ class VelocityController:
         ang_w = twist_ee[3:6].reshape(3,1)        
         
         return(self.get_joint_vel(J, pos_v, ang_w, q, vinit))
-        
     
     def get_joint_vel_taskframe(self, twist_ee, q, vinit): 
         if(np.sum(np.absolute(twist_ee)) <= 0.0000001):
@@ -120,7 +114,6 @@ class VelocityController:
         ang_w = twist_ee[3:6].reshape(3,1)        
         
         return(self.get_joint_vel(J, pos_v, ang_w, q, vinit))
-        
         
     def getqp_H(self, J, vr, vp):
         n = self.n
@@ -141,20 +134,17 @@ class VelocityController:
         H = 2*(H1+H2+H3+H4)
 
         return H
-        
     
     def getqp_f(self):
         n = self.n
         er = self.er
         ep = self.ep
         f = -2*np.hstack((np.zeros((1,n))[0],er,ep)).T
-        
         return f    
     
     def get_joint_vel(self, J, pos_v, ang_w, q, vinit):
-        
-        
         n= self.n
+
         # params for qp 
         H = self.getqp_H(J, ang_w, pos_v)        
         f = self.getqp_f()
@@ -169,7 +159,6 @@ class VelocityController:
         f = matrix(f, tc='d')
         LB = matrix(LB, tc = 'd')
         UB = matrix(UB, tc = 'd')
-        
         
         #add joint limits   
         q_lim_upper = self.q_bounds[:,1]
@@ -205,37 +194,31 @@ class VelocityController:
         A_neg[0][0:n] = 1
         b_neg[0][0:n] = -np.tan(c*np.pi/2)
 
-
         if np.sum(ub_ck_idx_neg) >= 1: #Infeasible start, upper bound, push to the negative direction
             A_neg[0][np.hstack((ub_ck_idx_neg, False, False))] = -1
             b_neg[0][np.hstack((ub_ck_idx_neg, False, False))] = e
-            
 
         if np.sum(lb_ck_idx_neg)>=1: #Infeasible start, lower bound, push to the positive direction
             A_neg[0][np.hstack((lb_ck_idx_neg, False, False))] = 1
             b_neg[0][np.hstack((lb_ck_idx_neg, False, False))] = e
-        
         
         if np.sum(ub_ck_idx_2)>=1: #level-2 upper bound, push to the negative direction
             A_neg[0][np.hstack((ub_ck_idx_2, False, False))] = -1
             for idx_tmp in range(n):
                 if ub_ck_idx_2[idx_tmp] == True:
                     b_neg[0][idx_tmp] = e*(ita-ub_check[idx_tmp])/ita
-        
 
         if np.sum(lb_ck_idx_2)>=1: #level-2 lower bound, push to the positive direction
             A_neg[0][np.hstack((lb_ck_idx_2, False, False))] = 1
             for idx_tmp in range(n):
                 if lb_ck_idx_2[idx_tmp] == True:                    
                     b_neg[0][idx_tmp] = e*(ita-lb_check[idx_tmp])/ita
-        
 
         if np.sum(ub_ck_idx_1)>=1: #level-1 upper bound, positive dir slow down
             A_neg[0][np.hstack((ub_ck_idx_1, False, False))] = 1
             for idx_tmp in range(n):
                 if ub_ck_idx_1[idx_tmp] == True:
                     b_neg[0][idx_tmp] = -np.tan(c*np.pi*(ub_check[idx_tmp]-ita)/2/epsilon)
-        
 
         if np.sum(lb_ck_idx_1)>=1: #level-1 lower bound, negative dir slow down
             A_neg[0][np.hstack((lb_ck_idx_1, False, False))] = -1
@@ -250,7 +233,6 @@ class VelocityController:
         """   
         
         # inequality constraints        
-        
         A_neg_tmp = np.zeros((n+2,n+2))
         np.fill_diagonal(A_neg_tmp,A_neg)
         A_neg = A_neg_tmp[0:n][:]
@@ -259,33 +241,14 @@ class VelocityController:
         A = matrix([matrix(np.eye(n+2), tc='d'), matrix(-np.eye(n+2), tc='d'), matrix(-A_neg, tc='d')])           
         b = matrix([UB, -LB, matrix(-b_neg, tc='d')]) # Upper bound(joints + er + ep), lower bound(joints + er + ep), q_lim bounds(joints)
         
-        #print(A)
-        #print(b)
-        #sys.exit()
-        #print(q)
-        #sys.exit()
-        
-        #A = matrix([matrix(np.eye(n+2), tc='d'), matrix(-np.eye(n+2), tc='d')])           
-        #b = matrix([UB, -LB]) # Upper bound(joints + er + ep), lower bound(joints + er + ep), q_lim bounds(joints)
-        
         # solve        
         solvers.options['show_progress'] = False
-        
-        #init_guess = matrix(np.hstack((vinit, 0, 0)), tc='d')
-        #print(init_guess)
         
         init_guess = matrix(np.hstack((vinit)), tc='d')
         sol = solvers.qp(H,f,A,b,initvals=init_guess)
         dq_sln = sol['x']
-        
-        #print("pos_v, ang_w, q, dq_sln")
-        #print(pos_v)
-        #print(ang_w)
-        #print(q)
-        #print(dq_sln)
 
         return dq_sln
-        
     
     def robotParams(self):
         # basic parameters
@@ -310,18 +273,15 @@ class VelocityController:
         q_bounds = np.array([[-359.99,359.99],[-128.9,128.9],[-359.99,359.99],[-147.8,147.8],[-359.99,359.99],[-120.3,120.3],[-359.99,359.99]])*np.pi/180
         
         return ex,ey,ez,n,P,q,H,types,dq_bounds,q_bounds
-        
     
     def rot(self, h, q):
         h=h/norm(h)
         R = np.eye(3) + np.sin(q)*self.hat(h) + (1 - np.cos(q))*np.dot(self.hat(h), self.hat(h))
         return R
         
-        
     def hat(self, h):
         h_hat = np.array([[0, -h[2], h[1]], [h[2], 0, -h[0]], [-h[1], h[0], 0]])
         return h_hat
-        
         
 # quaternion multiplication
 def quatmultiply(q1, q0):
@@ -346,50 +306,3 @@ def quat2axang(q):
     axang = np.hstack((vector,theta))
     
     return axang
-        
-
-class ControlParams:        
-    def __init__(self,ex,ey,ez,n,P,H,types,dq_bounds,q_bounds,q,dq,pos,orien,pos_v,ang_v,w_t,v_t,epsilon,inc_pos_v,inc_ang_v,stop,er,ep,upper_dq_bounds,dt):
-        self.params = self.ControlParams(ex,ey,ez,n,P,H,types,dq_bounds,q_bounds,q,dq,pos,orien,pos_v,ang_v,w_t,v_t,epsilon,inc_pos_v,inc_ang_v,stop,er,ep,upper_dq_bounds,dt)
-    
-        
-    def ControlParams(self, ex,ey,ez,n,P,H,types,dq_bounds,q_bounds,q,dq,pos,orien,pos_v,ang_v,w_t,v_t,epsilon,inc_pos_v,inc_ang_v,stop,er,ep,upper_dq_bounds,dt):
-        definition = {}
-        controls = {}
-        plots = {}
-        keyboard = {}
-        opt = {}
-        
-        definition['ex'] = ex
-        definition['ey'] = ey            
-        definition['ez'] = ez
-        definition['n'] = n
-        definition['P'] = P
-        definition['H'] = H
-        definition['types'] = types
-        definition['dq_bounds'] = dq_bounds
-        definition['q_bounds'] = q_bounds
-        
-        controls['q'] = q
-        controls['dq'] = dq
-        controls['pos'] = pos
-        controls['orien'] = orien
-        controls['pos_v'] = pos_v
-        controls['ang_v'] = ang_v
-        controls['w_t'] = w_t
-        controls['v_t'] = v_t
-        controls['epsilon'] = epsilon
-        controls['stop'] = stop
-        controls['dt'] = dt
-        
-        keyboard['inc_pos_v'] = inc_pos_v 
-        keyboard['inc_ang_v'] = inc_ang_v 
-        
-        opt['er'] = er
-        opt['ep'] = ep
-        opt['upper_dq_bounds'] = upper_dq_bounds
-        
-        params = {'def': definition, 'controls': controls, 'plots': plots, 'keyboard': keyboard, 'opt': opt}
-        return params
-    
-        

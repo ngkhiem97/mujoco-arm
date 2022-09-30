@@ -369,7 +369,7 @@ class SimulatorVelCtrl: #a communication wrapper for MuJoCo
         self.twist_ee = np.array([0, 0, 0, 0, 0, 0])        
 
         # move down for 1 seconds
-        self.twist_ee = np.array([0.45,0,-0.99,0,0,0])
+        self.twist_ee = np.array([0.88,0,-0.99,0,0,0])
         t0 = time.time()
         duration = 1
         while time.time() - t0 < duration:
@@ -380,29 +380,42 @@ class SimulatorVelCtrl: #a communication wrapper for MuJoCo
             time.sleep(0.1)
 
         # close gripper
-        while gqtgt < 1.5:
+        while gqtgt <= 1.2:
             gqtgt = gqtgt + 0.1
             self.lock1.acquire()
             self.sim.data.ctrl[self.nv] = gqtgt 
             self.sim.data.ctrl[self.nv+1] = gqtgt
             self.lock1.release()
-
-        self.twist_ee = np.array([0, 0, 0, 0, 0, 0])
-        self.lock.acquire()                    
-        vtgt = self.velocityCtrl.get_joint_vel_worldframe(self.twist_ee, np.array(self.sim.data.qpos[0:7]), np.array(self.sim.data.qvel[0:7]))   
-        self.queue.append(vtgt)                    
-        self.lock.release()
-        time.sleep(0.1)
-
-        self.twist_ee = np.array([0.99, 0, 0, 0, 0, 0])
+        
+        self.twist_ee = np.array([0,0,0.01,0,0,0])
         t0 = time.time()
-        duration = 4
+        duration = 1 # up duration
+        while time.time() - t0 < duration:
+            self.lock.acquire()
+            self.twist_ee *= 2
+            vtgt = self.velocityCtrl.get_joint_vel_worldframe(self.twist_ee, np.array(self.sim.data.qpos[0:7]), np.array(self.sim.data.qvel[0:7]))   
+            self.queue.append(vtgt*14)
+            self.lock.release()
+            time.sleep(0.1)
+
+        # move down for 1 seconds
+        self.twist_ee = np.array([-0.99,0,-0.77,0,0,0])
+        t0 = time.time()
+        duration = 2
         while time.time() - t0 < duration:
             self.lock.acquire()
             vtgt = self.velocityCtrl.get_joint_vel_worldframe(self.twist_ee, np.array(self.sim.data.qpos[0:7]), np.array(self.sim.data.qvel[0:7]))   
-            self.queue.append(vtgt*4)
+            self.queue.append(vtgt*12)                    
             self.lock.release()
-            time.sleep(0.01)
+            time.sleep(0.1)
+
+        # open gripper
+        while gqtgt >= 0.0:
+            gqtgt = gqtgt - 0.1
+            self.lock1.acquire()
+            self.sim.data.ctrl[self.nv] = gqtgt 
+            self.sim.data.ctrl[self.nv+1] = gqtgt
+            self.lock1.release()
 
         self.twist_ee = np.array([0, 0, 0, 0, 0, 0])
         self.lock.acquire()                    

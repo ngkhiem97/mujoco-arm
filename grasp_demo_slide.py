@@ -394,13 +394,17 @@ class SimulatorVelCtrl: #a communication wrapper for MuJoCo
         self.lock.release()
         time.sleep(0.1)
 
-        self.twist_ee = np.array([0.99, 0, 0, 0, 0, 0])
+        ang_v = [np.cos(-(15/180*np.pi)),0,np.sin(-(15/180*np.pi)),0]
+        axang = quat2axang(ang_v)
+        tmp = axang[3]*axang[0:3]
+        self.twist_ee = np.array([0.44, 0, 0, 0, 0, 0])
+        self.twist_ee = np.array([self.twist_ee[0],self.twist_ee[1],self.twist_ee[2],tmp[0]*3,tmp[1]*3,tmp[2]*3])
         t0 = time.time()
-        duration = 4
+        duration = 0.9
         while time.time() - t0 < duration:
             self.lock.acquire()
             vtgt = self.velocityCtrl.get_joint_vel_worldframe(self.twist_ee, np.array(self.sim.data.qpos[0:7]), np.array(self.sim.data.qvel[0:7]))   
-            self.queue.append(vtgt*4)
+            self.queue.append(vtgt*32)
             self.lock.release()
             time.sleep(0.01)
 

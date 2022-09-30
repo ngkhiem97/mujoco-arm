@@ -27,9 +27,7 @@
         </visual>
         
         <default>        
-            <!--joint type="hinge" armature="0.01" damping=".01"/-->
             <default class="GEN3">
-                <!--joint type="hinge" damping='65'/-->
                 <joint type="hinge" armature="0.01" damping='0'/>
             </default>
             <default class="2F-85">
@@ -144,20 +142,6 @@
                 </body>
             </body>
             
-           
-            
-                
-            
-            <!--body name="obs0" pos="0.325 0 0.075">
-                <inertial pos="0 0 0" mass="0.0221" diaginertia="7.3600e-07 6.6240e-06 6.6240e-06" />                
-                <geom name="obs0_g" pos="0 0 0" size="0.06 0.02 0.02" type="box" rgba="0 0.7 0.1 1" friction="1 0.01 0.0001" solimp="0.99 0.99 0.01" solref="0.01 1" condim="4" margin="0.0"/>                      
-                <joint name="obs0_transX" pos="0 0 0" axis="1 0 0" type="slide" group="3" stiffness="0" springref="0" damping="0" frictionloss="0"/>
-                <joint name="obs0_transY" pos="0 0 0" axis="0 1 0" type="slide" group="3" stiffness="0" springref="0" damping="0" frictionloss="0"/> 
-                <joint name="obs0_transZ" pos="0 0 0" axis="0 0 1" type="slide" group="3" stiffness="0" springref="0" damping="0" frictionloss="0"/> 
-                <joint name="obs0_rotX" pos="0 0 0" axis="1 0 0" type="hinge" group="3" stiffness="0" springref="0" damping="0" frictionloss="0"/> 
-                <joint name="obs0_rotY" pos="0 0 0" axis="0 1 0" type="hinge" group="3" stiffness="0" springref="0" damping="0" frictionloss="0"/> 
-                <joint name="obs0_rotZ" pos="0 0 0" axis="0 0 1" type="hinge" group="3" stiffness="0" springref="0" damping="0" frictionloss="0"/> 
-        	</body-->
         </worldbody>
         <equality>
             <tendon tendon1="gf1_t" polycoef="0 1 0 0 0" solref="0.01 1" solimp="0.99 0.99 0.001 0.5 2" />
@@ -174,14 +158,6 @@
             </spatial>
         </tendon>        
         <actuator>
-            <!--position name="Joint1" gear="3" kp="50" joint="joint_1" ctrllimited="true" ctrlrange="-39 39"/>
-            <position name="Joint2" gear="3" kp="50" joint="joint_2" ctrllimited="true" ctrlrange="-39 39"/>
-            <position name="Joint3" gear="3" kp="50" joint="joint_3" ctrllimited="true" ctrlrange="-39 39"/>
-            <position name="Joint4" gear="3" kp="50" joint="joint_4" ctrllimited="true" ctrlrange="-39 39"/>
-            <position name="Joint5" gear="3" kp="50" joint="joint_5" ctrllimited="true" ctrlrange="-19 19"/>
-            <position name="Joint6" gear="3" kp="50" joint="joint_6" ctrllimited="true" ctrlrange="-19 19"/>
-            <position name="Joint7" gear="3" kp="50" joint="joint_7" ctrllimited="true" ctrlrange="-19 19"/-->
-            
             <motor name="Joint1" gear="3" joint="robot0:joint_1" ctrllimited="true" ctrlrange="-39 39"/>
             <motor name="Joint2" gear="3" joint="robot0:joint_2" ctrllimited="true" ctrlrange="-39 39"/>
             <motor name="Joint3" gear="3" joint="robot0:joint_3" ctrllimited="true" ctrlrange="-39 39"/>
@@ -196,8 +172,5 @@
 
     <learning>
         <init gpCtrl="0.0" qpos="-0.127181051549069, 0.00901772438787630, -3.01409023737303, -2.05683166720318, 0.00206247511899344, -1.08331301300774, 1.56718083717756, 0.427025349393001, -0.0132745882194365, -0.410857417664789, 0.414403268295026, 0.427030204649298, -0.0132745629036435, -0.410860594573161, 0.414403548952295, -0.0148099632443219, 0.000769951806940145, 0.159304460617704, -0.00207878677674621, -0.0107128718560663, -0.00217163795532811" />
-        <!--init gpCtrl="0.8" qpos="-0.127181051549069, 0.00801772438787630, -3.01409023737303, -2.05683166720318, 0.00206247511899344, -1.08331301300774, 1.56718083717756, 0.427025349393001, -0.0132745882194365, -0.410857417664789, 0.414403268295026, 0.427030204649298, -0.0132745629036435, -0.410860594573161, 0.414403548952295, -0.0148099632443219, 0.000769951806940145, 0.159304460617704, -0.00207878677674621, -0.0107128718560663, -0.00217163795532811" /-->
-        <!--init gpCtrl="1.153999999999994" qpos="-0.0365828489949550, 0.0498700665678947, -3.10464811356652, -2.11608827169678, 0.00201575388921575, -0.984072490585130, 1.56790275735347, 0.635180429600685, -0.0198200868979524, -0.607435819901931, 0.614847370698096, 0.635617267019850, -0.0198257724134523, -0.607855171297995, 0.615283322047882, -0.0145317229799718, 0.000643961944164323, 0.128747258163212, -0.00274902364734881, -0.0106760773691333, -0.00129953900646959" /-->
-        <!--init gpCtrl="1.153999999999994" qpos="-0.127181051549069, 0.00801772438787630, -3.01409023737303, -2.05683166720318, 0.00206247511899344, -1.08331301300774, 1.56718083717756, 0.635180429600685, -0.0198200868979524, -0.607435819901931, 0.614847370698096, 0.635617267019850, -0.0198257724134523, -0.607855171297995, 0.615283322047882, -0.0148099632443219, 0.000769951806940145, 0.159304460617704, -0.00207878677674621, -0.0107128718560663, -0.00217163795532811" /-->
     </learning>
 </muj_extended>
