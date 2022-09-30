@@ -368,6 +368,8 @@ class SimulatorVelCtrl: #a communication wrapper for MuJoCo
         pos_v = np.array([0,0,0])
         self.twist_ee = np.array([0, 0, 0, 0, 0, 0])        
 
+        time.sleep(3)
+
         # move down for 1 seconds
         self.twist_ee = np.array([0.88,0,-0.99,0,0,0])
         t0 = time.time()
