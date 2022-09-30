@@ -17,10 +17,11 @@ from scipy.spatial import ConvexHull as ConvexHull2D
 from stl.mesh import Mesh
 from VelocityController import *
 import time
+import argparse
 
 class SimulatorVelCtrl: #a communication wrapper for MuJoCo
                    
-    def init(self, modelFile, nv):
+    def init(self, modelFile, nv, action):
         self.lock = threading.Lock()
         self.lock1 = threading.Lock()
         self.lockcv2 = threading.Lock()
@@ -58,10 +59,11 @@ class SimulatorVelCtrl: #a communication wrapper for MuJoCo
         self.viewer = MjViewer(self.sim)
         self.offscreen = MjRenderContextOffscreen(self.sim, 0, quiet = True)
         self.goal = self.sim.data.get_site_xpos('target0')
-        self.nv = 7
+        self.nv = nv
         self.v_tgt = np.zeros(self.nv)
         self.queue = deque(maxlen=10)
         self.queue_img = deque(maxlen=10)
+        self.action = action
         self.thViewer = threading.Thread(target=self.cv2_viewer, args=())
         self.thViewer.start()
         
@@ -366,55 +368,14 @@ class SimulatorVelCtrl: #a communication wrapper for MuJoCo
         # initial speeds
         ang_v = np.array([1,0,0,0])
         pos_v = np.array([0,0,0])
-        self.twist_ee = np.array([0, 0, 0, 0, 0, 0])     
+        self.twist_ee = np.array([0, 0, 0, 0, 0, 0])        
 
-        time.sleep(3)   
-
-        # move down for 1 seconds
-        self.twist_ee = np.array([0.45,0,-0.99,0,0,0])
-        t0 = time.time()
-        duration = 1
-        while time.time() - t0 < duration:
-            self.lock.acquire()
-            vtgt = self.velocityCtrl.get_joint_vel_worldframe(self.twist_ee, np.array(self.sim.data.qpos[0:7]), np.array(self.sim.data.qvel[0:7]))   
-            self.queue.append(vtgt*14)                    
-            self.lock.release()
-            time.sleep(0.1)
-
-        # close gripper
-        while gqtgt < 1.5:
-            gqtgt = gqtgt + 0.1
-            self.lock1.acquire()
-            self.sim.data.ctrl[self.nv] = gqtgt 
-            self.sim.data.ctrl[self.nv+1] = gqtgt
-            self.lock1.release()
-
-        self.twist_ee = np.array([0, 0, 0, 0, 0, 0])
-        self.lock.acquire()                    
-        vtgt = self.velocityCtrl.get_joint_vel_worldframe(self.twist_ee, np.array(self.sim.data.qpos[0:7]), np.array(self.sim.data.qvel[0:7]))   
-        self.queue.append(vtgt)                    
-        self.lock.release()
-        time.sleep(0.1)
-
-        ang_v = [np.cos(-(15/180*np.pi)),0,np.sin(-(15/180*np.pi)),0]
-        axang = quat2axang(ang_v)
-        tmp = axang[3]*axang[0:3]
-        self.twist_ee = np.array([0.44, 0, 0, 0, 0, 0])
-        self.twist_ee = np.array([self.twist_ee[0],self.twist_ee[1],self.twist_ee[2],tmp[0]*3,tmp[1]*3,tmp[2]*3])
-        t0 = time.time()
-        duration = 0.9
-        while time.time() - t0 < duration:
-            self.lock.acquire()
-            vtgt = self.velocityCtrl.get_joint_vel_worldframe(self.twist_ee, np.array(self.sim.data.qpos[0:7]), np.array(self.sim.data.qvel[0:7]))   
-            self.queue.append(vtgt*32)
-            self.lock.release()
-            time.sleep(0.01)
-
-        self.twist_ee = np.array([0, 0, 0, 0, 0, 0])
-        self.lock.acquire()                    
-        vtgt = self.velocityCtrl.get_joint_vel_worldframe(self.twist_ee, np.array(self.sim.data.qpos[0:7]), np.array(self.sim.data.qvel[0:7]))   
-        self.queue.append(vtgt)                    
-        self.lock.release()
+        if self.action == "pap":
+            gqtgt = self.pick_and_place(gqtgt)
+        elif self.action == "push":
+            gqtgt = self.push(gqtgt)
+        elif self.action == "slide":
+            gqtgt, ang_v = self.slide(gqtgt)
         
         while True:
             twist_ee = self.twist_ee
@@ -519,6 +480,163 @@ class SimulatorVelCtrl: #a communication wrapper for MuJoCo
             
             self.show_image(title)
         cv2.destroyAllWindows()
+
+    def pick_and_place(self, gqtgt):
+        time.sleep(3)
+
+        # move down for 1 seconds
+        self.twist_ee = np.array([0.88,0,-0.99,0,0,0])
+        t0 = time.time()
+        duration = 1
+        while time.time() - t0 < duration:
+            self.lock.acquire()
+            vtgt = self.velocityCtrl.get_joint_vel_worldframe(self.twist_ee, np.array(self.sim.data.qpos[0:7]), np.array(self.sim.data.qvel[0:7]))   
+            self.queue.append(vtgt*14)                    
+            self.lock.release()
+            time.sleep(0.1)
+
+        # close gripper
+        while gqtgt <= 1.2:
+            gqtgt = gqtgt + 0.1
+            self.lock1.acquire()
+            self.sim.data.ctrl[self.nv] = gqtgt 
+            self.sim.data.ctrl[self.nv+1] = gqtgt
+            self.lock1.release()
+        
+        self.twist_ee = np.array([0,0,0.01,0,0,0])
+        t0 = time.time()
+        duration = 1 # up duration
+        while time.time() - t0 < duration:
+            self.lock.acquire()
+            self.twist_ee *= 2
+            vtgt = self.velocityCtrl.get_joint_vel_worldframe(self.twist_ee, np.array(self.sim.data.qpos[0:7]), np.array(self.sim.data.qvel[0:7]))   
+            self.queue.append(vtgt*14)
+            self.lock.release()
+            time.sleep(0.1)
+
+        # move down for 1 seconds
+        self.twist_ee = np.array([-0.99,0,-0.77,0,0,0])
+        t0 = time.time()
+        duration = 2
+        while time.time() - t0 < duration:
+            self.lock.acquire()
+            vtgt = self.velocityCtrl.get_joint_vel_worldframe(self.twist_ee, np.array(self.sim.data.qpos[0:7]), np.array(self.sim.data.qvel[0:7]))   
+            self.queue.append(vtgt*12)                    
+            self.lock.release()
+            time.sleep(0.1)
+
+        # open gripper
+        while gqtgt >= 0.0:
+            gqtgt = gqtgt - 0.1
+            self.lock1.acquire()
+            self.sim.data.ctrl[self.nv] = gqtgt 
+            self.sim.data.ctrl[self.nv+1] = gqtgt
+            self.lock1.release()
+
+        self.twist_ee = np.array([0, 0, 0, 0, 0, 0])
+        self.lock.acquire()                    
+        vtgt = self.velocityCtrl.get_joint_vel_worldframe(self.twist_ee, np.array(self.sim.data.qpos[0:7]), np.array(self.sim.data.qvel[0:7]))   
+        self.queue.append(vtgt)                    
+        self.lock.release()
+        return gqtgt
+    
+
+
+    def push(self, gqtgt):
+        time.sleep(3)
+
+        # move down for 1 seconds
+        self.twist_ee = np.array([0.45,0,-0.99,0,0,0])
+        t0 = time.time()
+        duration = 1
+        while time.time() - t0 < duration:
+            self.lock.acquire()
+            vtgt = self.velocityCtrl.get_joint_vel_worldframe(self.twist_ee, np.array(self.sim.data.qpos[0:7]), np.array(self.sim.data.qvel[0:7]))   
+            self.queue.append(vtgt*14)                    
+            self.lock.release()
+            time.sleep(0.1)
+
+        # close gripper
+        while gqtgt < 1.5:
+            gqtgt = gqtgt + 0.1
+            self.lock1.acquire()
+            self.sim.data.ctrl[self.nv] = gqtgt 
+            self.sim.data.ctrl[self.nv+1] = gqtgt
+            self.lock1.release()
+
+        self.twist_ee = np.array([0, 0, 0, 0, 0, 0])
+        self.lock.acquire()                    
+        vtgt = self.velocityCtrl.get_joint_vel_worldframe(self.twist_ee, np.array(self.sim.data.qpos[0:7]), np.array(self.sim.data.qvel[0:7]))   
+        self.queue.append(vtgt)                    
+        self.lock.release()
+        time.sleep(0.1)
+
+        self.twist_ee = np.array([0.99, 0, 0, 0, 0, 0])
+        t0 = time.time()
+        duration = 4
+        while time.time() - t0 < duration:
+            self.lock.acquire()
+            vtgt = self.velocityCtrl.get_joint_vel_worldframe(self.twist_ee, np.array(self.sim.data.qpos[0:7]), np.array(self.sim.data.qvel[0:7]))   
+            self.queue.append(vtgt*4)
+            self.lock.release()
+            time.sleep(0.01)
+
+        self.twist_ee = np.array([0, 0, 0, 0, 0, 0])
+        self.lock.acquire()                    
+        vtgt = self.velocityCtrl.get_joint_vel_worldframe(self.twist_ee, np.array(self.sim.data.qpos[0:7]), np.array(self.sim.data.qvel[0:7]))   
+        self.queue.append(vtgt)                    
+        self.lock.release()
+        return gqtgt
+
+    def slide(self, gqtgt):
+        time.sleep(3)   
+
+        # move down for 1 seconds
+        self.twist_ee = np.array([0.45,0,-0.99,0,0,0])
+        t0 = time.time()
+        duration = 1
+        while time.time() - t0 < duration:
+            self.lock.acquire()
+            vtgt = self.velocityCtrl.get_joint_vel_worldframe(self.twist_ee, np.array(self.sim.data.qpos[0:7]), np.array(self.sim.data.qvel[0:7]))   
+            self.queue.append(vtgt*14)                    
+            self.lock.release()
+            time.sleep(0.1)
+
+        # close gripper
+        while gqtgt < 1.5:
+            gqtgt = gqtgt + 0.1
+            self.lock1.acquire()
+            self.sim.data.ctrl[self.nv] = gqtgt 
+            self.sim.data.ctrl[self.nv+1] = gqtgt
+            self.lock1.release()
+
+        self.twist_ee = np.array([0, 0, 0, 0, 0, 0])
+        self.lock.acquire()                    
+        vtgt = self.velocityCtrl.get_joint_vel_worldframe(self.twist_ee, np.array(self.sim.data.qpos[0:7]), np.array(self.sim.data.qvel[0:7]))   
+        self.queue.append(vtgt)                    
+        self.lock.release()
+        time.sleep(0.1)
+
+        ang_v = [np.cos(-(15/180*np.pi)),0,np.sin(-(15/180*np.pi)),0]
+        axang = quat2axang(ang_v)
+        tmp = axang[3]*axang[0:3]
+        self.twist_ee = np.array([0.44, 0, 0, 0, 0, 0])
+        self.twist_ee = np.array([self.twist_ee[0],self.twist_ee[1],self.twist_ee[2],tmp[0]*3,tmp[1]*3,tmp[2]*3])
+        t0 = time.time()
+        duration = 0.9
+        while time.time() - t0 < duration:
+            self.lock.acquire()
+            vtgt = self.velocityCtrl.get_joint_vel_worldframe(self.twist_ee, np.array(self.sim.data.qpos[0:7]), np.array(self.sim.data.qvel[0:7]))   
+            self.queue.append(vtgt*32)
+            self.lock.release()
+            time.sleep(0.01)
+
+        self.twist_ee = np.array([0, 0, 0, 0, 0, 0])
+        self.lock.acquire()                    
+        vtgt = self.velocityCtrl.get_joint_vel_worldframe(self.twist_ee, np.array(self.sim.data.qpos[0:7]), np.array(self.sim.data.qvel[0:7]))   
+        self.queue.append(vtgt)                    
+        self.lock.release()
+        return gqtgt,ang_v
         
     def show_image(self, title):
         znear = 0.01
@@ -632,6 +750,12 @@ def mat2euler(mat):
     return euler
     
 if __name__ == "__main__":
+    # get parameters
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--action', type=str, default='pap')
+    args = parser.parse_args()
+    action = args.action
+    
     simulator = SimulatorVelCtrl()
-    simulator.init("gen3_robotiq_2f_85_cellphone_table_grasp.xml", 7)
+    simulator.init("gen3_robotiq_2f_85_cellphone_table_grasp.xml", 7, action)
     simulator.start()
