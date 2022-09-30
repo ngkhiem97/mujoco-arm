@@ -6,7 +6,13 @@
 
 This Python project uses MuJoCo simulation to control [six degrees of freedom Gen3 robotic arm](https://www.kinovarobotics.com/product/gen3-robots). The project aims to control the robot with three specific actions: push, pick-and-place, and push. For instructions on running the program, please see below.
 
-# Start demo on a specific action
+## Install requirements
+
+```bash
+pip install -r ./requirements.txt
+```
+
+## Start demo on a specific action
 
 ```bash
 bash script_<action>.script
