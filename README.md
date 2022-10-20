@@ -4,7 +4,7 @@
 |-----------------------|-----------------------|-----------------------|
 | ![](figures/push.gif) | ![](figures/pap.gif) | ![](figures/slide.gif) |
 
-This Python project uses MuJoCo simulation to control [six degrees of freedom Gen3 robotic arm](https://www.kinovarobotics.com/product/gen3-robots). The project aims to control the robot with three specific actions: push, pick-and-place, and push. For instructions on running the program, please see below.
+This Python project uses MuJoCo simulation to control [six degrees of freedom Gen3 robotic arm](https://www.kinovarobotics.com/product/gen3-robots). The project aims to control the robot with three specific actions: push, pick-and-place, and slide. For instructions on running the program, please see below.
 
 ## Install requirements
 
