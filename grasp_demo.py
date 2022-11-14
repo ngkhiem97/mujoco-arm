@@ -376,6 +376,8 @@ class SimulatorVelCtrl: #a communication wrapper for MuJoCo
             gqtgt = self.push(gqtgt)
         elif self.action == "slide":
             gqtgt, ang_v = self.slide(gqtgt)
+        else:
+            pass
         
         while True:
             twist_ee = self.twist_ee
@@ -752,7 +754,7 @@ def mat2euler(mat):
 if __name__ == "__main__":
     # get parameters
     parser = argparse.ArgumentParser()
-    parser.add_argument('--action', type=str, default='pap')
+    parser.add_argument('--action', type=str, default='none')
     args = parser.parse_args()
     action = args.action
     
